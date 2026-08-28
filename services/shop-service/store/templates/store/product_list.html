@@ -1,0 +1,43 @@
+{% extends "store/base.html" %}
+
+{% block title %}Каталог товаров{% endblock %}
+
+{% block content %}
+    <h1>Каталог товаров</h1>
+
+    <form method="get" class="filter-form">
+        <input type="text" name="q" placeholder="Поиск товаров..." value="{{ request.GET.q }}">
+        <input type="number" name="min_price" placeholder="Мин.цена" value="{{ request.GET.min_price }}">
+        <input type="number" name="max_price" placeholder="Макс.цена" value="{{ request.GET.max_price }}">
+        <button type="submit">Фильтровать</button>
+    </form>
+
+
+    <div class="product-grid">
+        {% for product in products %}
+           <div class="product-card">
+               <h3>
+                   <a href="{% url 'product_detail' product.id %}">
+                       {{ product.name }}
+                   </a>
+               </h3>
+
+               <p>{{ product.description|truncatewords:20 }}</p>
+               <p><strong>Цена:</strong> {{ product.price }} ₽</p>
+
+
+               <form method="post" action="{% url 'add_to_cart' product.id %}">
+                   {% csrf_token %}
+                   <button type="submit">Добавить в корзину</button>
+               </form>
+
+
+               <a href="{% url 'product_detail' product.id %}">
+                   <button>Подробнее</button>
+               </a>
+           </div>
+        {% empty %}
+            <p>Нет доступных товаров.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

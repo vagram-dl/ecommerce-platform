@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Магазин{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1>TechShop</h1>
+        <nav>
+            <a href="/">Главная</a>
+            <a href="{% url 'product_list' %}">Каталог</a>
+            <a href="{% url 'cart_view' %}">Корзина</a>
+            <a href="#">Заказы</a>
+            <a href="#">Профиль</a>
+
+            {% if user.is_authenticated %}
+                <span> Привет, {{user.username}}!</span>
+                <a href="{% url 'logout' %}">Выход</a>
+            {% else %}
+                <a href="{% url 'login' %}">Вход</a>
+                <a href="{% url 'register' %}">Регистрация</a>
+            {% endif %}
+        </nav>
+
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2026 TechShop</p>
+    </footer>
+</body>
+</html>

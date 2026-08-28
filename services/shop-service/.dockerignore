@@ -1,0 +1,12 @@
+.venv/
+venv/
+env/
+.git/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.sqlite3
+.idea/
+.env
+.env.local

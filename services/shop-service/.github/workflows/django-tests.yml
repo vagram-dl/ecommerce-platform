@@ -1,0 +1,44 @@
+name: Django E-commerce CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      PYTHONUNBUFFERED: 1
+      SECRET_KEY: 'django-insecure-test-key-for-ci-cd-only-not-for-production'
+      DEBUG: 'True'
+      DB_NAME: 'test_db'
+      DB_USER: 'root'
+      DB_PASSWORD: 'root'
+      DB_HOST: 'localhost'
+      DB_PORT: '3306'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies for MySQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-libmysqlclient-dev build-essential pkg-config
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Django tests
+        run: |
+          python manage.py test
