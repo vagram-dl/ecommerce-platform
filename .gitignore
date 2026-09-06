@@ -23,3 +23,8 @@ staticfiles/
 # OS
 .DS_Store
 Thumbs.db
+
+# RSA keys for JWT (secret!)
+services/identity-service/keys/private_key.pem
+services/identity-service/generate_keys.py
+
