@@ -11,11 +11,13 @@ import base64
 from django.conf import settings
 from cryptography.hazmat.primitives import serialization
 from django.http import JsonResponse
+from django.db import transaction
 
 
 class RegisterView(APIView):
     permission_classes = []
 
+    @transaction.atomic
     def post(self,request):
         serializer = RegisterSerializer(data=request.data)
 
@@ -35,6 +37,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = []
+
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={'request':request})
@@ -63,6 +66,7 @@ class UserView(APIView):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self,request):
         serializer = LogoutSerializer(data=request.data)
 
