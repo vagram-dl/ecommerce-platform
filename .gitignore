@@ -28,3 +28,7 @@ Thumbs.db
 services/identity-service/keys/private_key.pem
 services/identity-service/generate_keys.py
 
+*.pem
+*.key
+services/identity-service/keys/
+
