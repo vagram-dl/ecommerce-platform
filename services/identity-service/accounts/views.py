@@ -7,11 +7,11 @@ from rest_framework.views import APIView
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, LogoutSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-import base64
-from django.conf import settings
-from cryptography.hazmat.primitives import serialization
-from django.http import JsonResponse
 from django.db import transaction
+from authlib.jose import JsonWebKey
+from django.conf import settings
+from django.http import JsonResponse
+from rest_framework.views import APIView
 
 
 class RegisterView(APIView):
@@ -78,20 +78,14 @@ class LogoutView(APIView):
 class JWKSView(APIView):
     permission_classes = []
 
-    def get(self, request):
+    def get(self,request):
         public_key_pem = settings.SIMPLE_JWT['VERIFYING_KEY']
-        public_key = serialization.load_pem_public_key(public_key_pem)
-        public_numbers = public_key.public_numbers()
+        jwk = JsonWebKey.import_key(public_key_pem)
 
-        def int_to_base64url(n):
-            byte_length = (n.bit_length() + 7) // 8
-            return base64.urlsafe_b64encode(n.to_bytes(byte_length, 'big')).rstrip(b'=').decode('ascii')
-        jwk = {
-            "kty": "RSA",
-            "use": "sig",
-            "n": int_to_base64url(public_numbers.n),
-            "e": int_to_base64url(public_numbers.e),
-            "kid": "identity-service-rsa-2048"
-        }
+        jwk_data = jwk.as_dict()
+        jwk_data['kid'] = 'identity-service-rsa-2048'
+        jwk_data['use'] = 'sig'
+        jwk_data['alg'] = 'RS256'
 
-        return JsonResponse({"keys": [jwk]})
+        return JsonResponse({"keys": [jwk_data]})
+
