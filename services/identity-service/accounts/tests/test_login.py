@@ -26,6 +26,7 @@ class LoginViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('access', response.data)
         self.assertIn('refresh', response.data)
+        self.assertIn('id_token', response.data)
 
     def test_login_invalid_credentials(self):
         payload = {

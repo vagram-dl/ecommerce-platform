@@ -13,6 +13,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from .throttles import AuthRateThrottling
+from .utils import create_id_token
 
 
 class RegisterView(APIView):
@@ -48,11 +49,13 @@ class LoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             refresh = RefreshToken.for_user(user)
+            id_token = create_id_token(user)
 
             return Response(
                 {
                     'refresh': str(refresh),
                     'access': str(refresh.access_token),
+                    'id_token': id_token,
                     'message': 'Login successful'
                 },
                 status = status.HTTP_200_OK
