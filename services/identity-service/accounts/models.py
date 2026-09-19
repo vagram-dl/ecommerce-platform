@@ -2,7 +2,9 @@ from idlelib.pyparse import trans
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
+import uuid
+from django.utils import timezone
+from datetime import timedelta
 
 
 class User(AbstractUser):
@@ -75,4 +77,41 @@ class OIDCClient(models.Model):
         help_text="Активен ли клиент (False = доступ отозван)"
     )
 
+class AuthorizationCode(models.Model):
+    code = models.CharField(
+        max_length=128,
+        unique=True,
+        default=uuid.uuid4
+    )
+
+    client = models.ForeignKey(
+        OIDCClient,
+        on_delete=models.CASCADE,
+        related_name='authorization_codes'
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='authorization_codes'
+    )
+
+    redirect_uri = models.URLField()
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(minutes=5)
+        super().save(*args, *kwargs)
+
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        return not self.is_expired and not self.is_used
 # Create your models here.
