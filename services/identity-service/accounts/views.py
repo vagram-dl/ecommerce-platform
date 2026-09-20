@@ -14,6 +14,13 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from .throttles import AuthRateThrottling
 from .utils import create_id_token
+from django.shortcuts import redirect
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils import timezone
+from datetime import timedelta
+import uuid
+
+from .models import OIDCClient, AuthorizationCode
 
 
 class RegisterView(APIView):
@@ -94,4 +101,32 @@ class JWKSView(APIView):
         jwk_data['alg'] = 'RS256'
 
         return JsonResponse({"keys": [jwk_data]})
+
+class AuthorizeView(LoginRequiredMixin, APIView):
+    def get(self, request):
+        client_id = request.GET.get('client_id')
+        redirect_uri = request.GET.get('redirect_uri')
+        response_type = request.GET.get('response_type')
+
+        if response_type != 'code':
+            return Response({'error': 'Unsupported response_type'},status =400)
+
+        try:
+            client = OIDCClient.objects.get(client_id=client_id)
+        except OIDCClient.DoesNotExist:
+            return Response({'error': 'Invalid client_id'},status=400)
+
+        if not client.is_active:
+            return Response({'error':'Client is not active'},status=400)
+
+        if redirect_uri != client.redirect_uri:
+            return Response({'error':'Invalid redirect_uri'}, status=400)
+
+        auth_code = AuthorizationCode.objects.create(
+            client = client,
+            user = request.user,
+            redirect_uri = redirect_uri
+        )
+
+        return redirect(f"{redirect_uri}?code={auth_code.code}")
 
