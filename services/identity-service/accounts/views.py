@@ -130,3 +130,33 @@ class AuthorizeView(LoginRequiredMixin, APIView):
 
         return redirect(f"{redirect_uri}?code={auth_code.code}")
 
+class TokenView(APIView):
+    def post(self, request):
+        grant_type = request.data.get('grant_type')
+        code = request.data.get('code')
+        client_id = request.data.get('client_id')
+        client_secret = request.data.get('client_secret')
+        redirect_uri = request.data.get('redirect_uri')
+
+        if grant_type != 'authorization_code':
+            return Response({'error':'Unsupported grant_type'}, status=400)
+
+        try:
+            client = OIDCClient.objects.get(client_id=client_id)
+        except OIDCClient.DoesNotExist:
+            return Response({'error':'Invalid client_id'},status=400)
+
+        if client_secret != client.client_secret:
+            return Response({'error':'Invalid client_secret'},status=401)
+
+        try:
+            auth_code = AuthorizationCode.objects.get(code=code)
+        except AuthorizationCode.DoesNotExist:
+            return Response({'error':'Invalid code'},status=400)
+
+        if not auth_code.is_valid:
+            return Response({'error':'Code is expired or already used'},status=400)
+
+        if auth_code.client != client or auth_code.redirect_uri != redirect_uri:
+            return Response({'error':'Code mismatch'},status=400)
+
