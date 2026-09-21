@@ -20,6 +20,7 @@ from django.utils import timezone
 from datetime import timedelta
 import uuid
 
+
 from .models import OIDCClient, AuthorizationCode
 
 
@@ -130,7 +131,7 @@ class AuthorizeView(LoginRequiredMixin, APIView):
 
         return redirect(f"{redirect_uri}?code={auth_code.code}")
 
-class TokenView(APIView):
+class TokenView(APIView):   
     def post(self, request):
         grant_type = request.data.get('grant_type')
         code = request.data.get('code')
@@ -160,3 +161,16 @@ class TokenView(APIView):
         if auth_code.client != client or auth_code.redirect_uri != redirect_uri:
             return Response({'error':'Code mismatch'},status=400)
 
+        auth_code.is_used = True
+        auth_code.save()
+
+        refresh = RefreshToken.for_user(auth_code.user)
+        id_token = create_id_token(auth_code.user, client)
+
+        return Response({
+            'access_token': str(refresh.access_token),
+            'refresh_token':str(refresh),
+            'id_token':id_token,
+            'token_type':'Bearer',
+            'expires_in': 900,
+        })
