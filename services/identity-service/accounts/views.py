@@ -197,3 +197,19 @@ class DiscoveryView(APIView):
         }
 
         return Response(data)
+
+class UserInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        user = request.user
+
+        data = {
+            "sub":str(user.id),
+            "email":user.email,
+            "email_verified":False,
+            "preferred_username":user.username,
+            "updated_at":int(user.date_joined.timestamp()),
+        }
+
+        return Response(data)
