@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from accounts.views import JWKSView
+from accounts.views import JWKSView, DiscoveryView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,4 +26,5 @@ urlpatterns = [
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     path('.well-known/jwks.json', JWKSView.as_view(), name='jwks'),
+    path('.well-known/openid-configuration', DiscoveryView.as_view(), name='openid-configuration'),
 ]

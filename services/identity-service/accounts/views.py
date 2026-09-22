@@ -19,6 +19,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from datetime import timedelta
 import uuid
+from django.conf import settings
+
 
 
 from .models import OIDCClient, AuthorizationCode
@@ -174,3 +176,24 @@ class TokenView(APIView):
             'token_type':'Bearer',
             'expires_in': 900,
         })
+
+class DiscoveryView(APIView):
+    permission_classes = []
+
+    def get(self, request):
+        base_url = request.build_absolute_uri('/').rstrip('/')
+
+        data = {
+            "issuer":base_url,
+            "authorization_endpoint": f"{base_url}/api/auth/authorize/",
+            "token_endpoint":f"{base_url}/api/auth/token/",
+            "userinfo_endpoint": f"{base_url}/api/auth/userinfo/",
+            "jwks_uri":f"{base_url}/.well-known/jwks.json",
+            "response_types_supported": ["code"],
+            "subject_types_supported":["public"],
+            "id_token_signing_alg_values_supported": ["RS256"],
+            "scopes_supported": ["openid", "email", "profile"],
+            "token_endpoint_auth_methods_supported": ["client_secret_post"]
+        }
+
+        return Response(data)
