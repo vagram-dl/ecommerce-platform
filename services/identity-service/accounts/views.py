@@ -24,6 +24,7 @@ from django.conf import settings
 
 
 from .models import OIDCClient, AuthorizationCode
+from .clients import create_customer_in_shop
 
 
 class RegisterView(APIView):
@@ -36,12 +37,13 @@ class RegisterView(APIView):
 
         if serializer.is_valid():
             user = serializer.save()
-
+            customer_data = create_customer_in_shop(user)
             return Response(
                 {
                     'id': user.id,
                     'email': user.email,
-                    'message': 'User registered successfully'
+                    'message': 'User registered successfully',
+                    'shop_customer_created': customer_data is not None
                 },
                 status = status.HTTP_201_CREATED
             )

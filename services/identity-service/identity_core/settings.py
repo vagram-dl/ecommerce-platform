@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 from math import trunc
 from pathlib import Path
 
+import os
+from pythonjsonlogger import jsonlogger
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -165,4 +167,40 @@ SIMPLE_JWT = {
     'VERIFYING_KEY': open(Path(BASE_DIR) / 'keys' / 'public_key.pem', 'rb').read(),
 
 }
+
+LOGGING = {
+    'version':1,
+    'disable_existing_loggers':False,
+    'formatters':{
+        'json':{
+            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
+        },
+    },
+    'handlers':{
+        'console':{
+            'class':'logging.StreamHandler',
+            'formatter':'json',
+        },
+        'file' : {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(BASE_DIR / 'logs' / 'identity-service.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'json',
+        },
+    },
+    'root':{
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+    'loggers':{
+        'accounts':{
+            'handlers':['console','file'],
+            'level':'DEBUG',
+            'propagate':False
+        },
+    },
+}
+SHOP_SERVICE_URL = 'http://localhost:8001'
 
