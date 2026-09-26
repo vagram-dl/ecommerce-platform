@@ -104,7 +104,7 @@ class AuthorizationCode(models.Model):
     def save(self, *args, **kwargs):
         if not self.expires_at:
             self.expires_at = timezone.now() + timedelta(minutes=5)
-        super().save(*args, *kwargs)
+        super().save(*args, **kwargs)
 
 
     @property
