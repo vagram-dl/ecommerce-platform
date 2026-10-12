@@ -116,3 +116,21 @@ class TestJWKSCache(TestCase):
 
             self.assertIsNotNone(key2, "Старый ключ должен сохраниться при ошибке сети")
             self.assertEqual(key2['kid'],'key-123')
+
+    @patch('shop_project.jwks_cache.requests.get')
+    def test_unknown_kid_triggers_refresh(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            'keys':[{'kid':'key-123', 'kty':'RSA','n':'abc','e':'def'}]
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        cache = JWKSCache()
+        cache._keys = {}
+        cache._last_fetched = time.time()
+
+        key = cache.get_public_key('unknown-key')
+
+        mock_get.assert_called_once()
+        self.assertIsNone(key, "Неизвестный ключ должен вернуть None")
