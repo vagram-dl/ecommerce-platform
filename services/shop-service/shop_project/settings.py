@@ -145,7 +145,7 @@ REST_FRAMEWORK = {
     ],
 
     'DEFAULT_AUTHENTICATION_CLASSES' : [
-                'rest_framework_simplejwt.authentication.JWTAuthentication',
+                  'store.authentication.JWKSAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS' : 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE' : 5,
@@ -158,3 +158,5 @@ if os.environ.get('GITHUB_ACTIONS') == 'true':
             'NAME' : ':memory:',
         }
     }
+
+IDENTITY_SERVICE_JWKS_URL = 'http://localhost:8000/.well-known/jwks.json'
