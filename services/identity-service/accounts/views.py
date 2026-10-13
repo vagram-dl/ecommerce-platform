@@ -61,7 +61,7 @@ class LoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             refresh = RefreshToken.for_user(user)
-            id_token = create_id_token(user)
+            id_token = create_id_token(user, "ecommerce-platform")
 
             return Response(
                 {
