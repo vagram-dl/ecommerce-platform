@@ -6,6 +6,8 @@ def create_id_token(user, client = "ecommerce-platform"):
     base_token = AccessToken.for_user(user)
     payload = base_token.payload.copy()
 
+    payload['sub'] = str(user.id)
+
     payload['email'] = getattr(user, 'email', '')
     payload['email_verified'] = getattr(user, 'is_email_verified', False)
     payload['preferred_username'] = getattr(user, 'username', '')

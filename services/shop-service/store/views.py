@@ -1,8 +1,23 @@
 from django.shortcuts import render, get_object_or_404, redirect
+
+from shop_project.settings import REST_FRAMEWORK
 from .models import Product
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render,redirect
 from django.contrib.auth.decorators import login_required
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def test_auth(request):
+    return Response({
+        "message": " УСПЕХ! Токен проверен через JWKS-кэш!",
+        "user_id": request.user.id,
+        "username": getattr(request.user, 'username', 'Неизвестно')
+    })
+
 
 @login_required
 def orders(request):

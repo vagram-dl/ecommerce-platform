@@ -28,6 +28,7 @@ class JWKSAuthentication(authentication.BaseAuthentication):
                 token,
                 public_key,
                 algorithms=['RS256'],
+                audience='ecommerce-platform',
                 options={'require':['exp','iat','sub']}
             )
 
@@ -35,7 +36,16 @@ class JWKSAuthentication(authentication.BaseAuthentication):
 
             if not user_id:
                 raise exceptions.AuthenticationFailed('В токене отсутсвует ID пользователя')
-            user = User.objects.get(id=user_id)
+            user,created = User.objects.get_or_create(
+                id=user_id,
+                defaults={
+                    'email': payload.get('email',''),
+                    'username':payload.get('preferred_username',f'user_{user_id}')
+                }
+            )
+            if created:
+                user.set_unusable_password()
+                user.save()
             return (user,token)
 
         except jwt.ExpiredSignatureError:

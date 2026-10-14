@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views_api import ProductViewSet, CategoryViewSet, PaymentAPIView, WalletBalanceView, PaymentHistoryView
+from .import views
 
 router = DefaultRouter()
 router.register(r'products',ProductViewSet,basename = 'product')
@@ -11,4 +12,5 @@ urlpatterns = [
     path('payments/', PaymentAPIView.as_view(), name='payment-api'),
     path('wallet/balance/', WalletBalanceView.as_view(), name='wallet-balance'),
     path('payments/history/', PaymentHistoryView.as_view(),name='payment-history'),
+    path('test-auth/', views.test_auth, name='test_auth'),
 ]

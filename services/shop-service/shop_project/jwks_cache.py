@@ -2,6 +2,7 @@ import time
 import threading
 import requests
 from django.conf import settings
+from jwt.algorithms import RSAAlgorithm
 
 class JWKSCache:
     _instance = None
@@ -45,7 +46,12 @@ class JWKSCache:
                 response.raise_for_status()
 
                 jwks_data = response.json()
-                self._keys = {key['kid']:key for key in jwks_data.get('keys',[])}
+                new_keys = {}
+                for key_data in jwks_data.get('keys',[]):
+                    kid = key_data.get('kid')
+                    if kid:
+                        new_keys[kid] = RSAAlgorithm.from_jwk(key_data)
+                self._keys = new_keys
                 self._last_fetched = time.time()
 
             except requests.exceptions.RequestException as e:
