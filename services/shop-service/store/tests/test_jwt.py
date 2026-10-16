@@ -4,6 +4,11 @@ from rest_framework.test import APITestCase,APIClient
 from rest_framework import status
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
+import jwt
+from datetime import datetime, timedelta
+from django.conf import settings
+from django.contrib.auth import get_user_model
+
 
 class JWTAuthTests(APITestCase):
     def setUp(self):
