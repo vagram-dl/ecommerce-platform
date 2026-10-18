@@ -107,6 +107,40 @@ class CustomJWKSAuthTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn('Токен истек', response.data['detail'])
 
+    @patch('shop_project.jwks_cache.requests.get')
+    def test_wrong_audience(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self._mock_jwks_response()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = lambda :None
+        mock_get.return_value = mock_response
+
+        payload_overrides = {'aud':'wrong-service'}
+        token = self._create_custom_token(payload_overrides=payload_overrides)
+        self.client.credentials(HTTP_AUTHORIZATION = f'Bearer {token}')
+
+        response = self.client.get(self.test_url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn("Audience doesn't match", response.data['detail'])
+
+    @patch('shop_project.jwks_cache.requests.get')
+    def test_missing_kid_in_header(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self._mock_jwks_response()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = lambda : None
+        mock_get.return_value = mock_response
+
+        header_overrides = {'kid': ''}
+        token = self._create_custom_token(header_overrides=header_overrides)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+        response = self.client.get(self.test_url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data['detail'], 'Ошибка аутентификации')
+
 
 class JWTAuthTests(APITestCase):
     def setUp(self):
