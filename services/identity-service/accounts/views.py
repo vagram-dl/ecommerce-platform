@@ -1,30 +1,20 @@
-
-
-from rest_framework import status
-from rest_framework.response import Response
-
-
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, LogoutSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
 from authlib.jose import JsonWebKey
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.http import JsonResponse
+from django.shortcuts import redirect
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .clients import create_customer_in_shop
+from .models import AuthorizationCode, OIDCClient
+from .serializers import LoginSerializer, LogoutSerializer, RegisterSerializer, UserSerializer
 from .throttles import AuthRateThrottling
 from .utils import create_id_token
-from django.shortcuts import redirect
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.utils import timezone
-from datetime import timedelta
-import uuid
-from django.conf import settings
-
-
-
-from .models import OIDCClient, AuthorizationCode
-from .clients import create_customer_in_shop
 
 
 class RegisterView(APIView):
@@ -32,7 +22,7 @@ class RegisterView(APIView):
     throttle_classes = [AuthRateThrottling]
 
     @transaction.atomic
-    def post(self,request):
+    def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -40,52 +30,54 @@ class RegisterView(APIView):
             customer_data = create_customer_in_shop(user)
             return Response(
                 {
-                    'id': user.id,
-                    'email': user.email,
-                    'message': 'User registered successfully',
-                    'shop_customer_created': customer_data is not None
+                    "id": user.id,
+                    "email": user.email,
+                    "message": "User registered successfully",
+                    "shop_customer_created": customer_data is not None,
                 },
-                status = status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
 
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class LoginView(APIView):
     permission_classes = []
     throttle_classes = [AuthRateThrottling]
 
-
     def post(self, request):
-        serializer = LoginSerializer(data=request.data, context={'request':request})
+        serializer = LoginSerializer(data=request.data, context={"request": request})
 
         if serializer.is_valid():
-            user = serializer.validated_data['user']
+            user = serializer.validated_data["user"]
             refresh = RefreshToken.for_user(user)
             id_token = create_id_token(user, "ecommerce-platform")
 
             return Response(
                 {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                    'id_token': id_token,
-                    'message': 'Login successful'
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                    "id_token": id_token,
+                    "message": "Login successful",
                 },
-                status = status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
         return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+
 
 class UserView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self,request):
+    def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     @transaction.atomic
-    def post(self,request):
+    def post(self, request):
         serializer = LogoutSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -93,77 +85,76 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class JWKSView(APIView):
     permission_classes = []
 
-    def get(self,request):
-        public_key_pem = settings.SIMPLE_JWT['VERIFYING_KEY']
+    def get(self, request):
+        public_key_pem = settings.SIMPLE_JWT["VERIFYING_KEY"]
         jwk = JsonWebKey.import_key(public_key_pem)
 
         jwk_data = jwk.as_dict()
-        jwk_data['kid'] = 'identity-service-rsa-2048'
-        jwk_data['use'] = 'sig'
-        jwk_data['alg'] = 'RS256'
+        jwk_data["kid"] = "identity-service-rsa-2048"
+        jwk_data["use"] = "sig"
+        jwk_data["alg"] = "RS256"
 
         return JsonResponse({"keys": [jwk_data]})
 
+
 class AuthorizeView(LoginRequiredMixin, APIView):
     def get(self, request):
-        client_id = request.GET.get('client_id')
-        redirect_uri = request.GET.get('redirect_uri')
-        response_type = request.GET.get('response_type')
+        client_id = request.GET.get("client_id")
+        redirect_uri = request.GET.get("redirect_uri")
+        response_type = request.GET.get("response_type")
 
-        if response_type != 'code':
-            return Response({'error': 'Unsupported response_type'},status =400)
+        if response_type != "code":
+            return Response({"error": "Unsupported response_type"}, status=400)
 
         try:
             client = OIDCClient.objects.get(client_id=client_id)
         except OIDCClient.DoesNotExist:
-            return Response({'error': 'Invalid client_id'},status=400)
+            return Response({"error": "Invalid client_id"}, status=400)
 
         if not client.is_active:
-            return Response({'error':'Client is not active'},status=400)
+            return Response({"error": "Client is not active"}, status=400)
 
         if redirect_uri != client.redirect_uri:
-            return Response({'error':'Invalid redirect_uri'}, status=400)
+            return Response({"error": "Invalid redirect_uri"}, status=400)
 
-        auth_code = AuthorizationCode.objects.create(
-            client = client,
-            user = request.user,
-            redirect_uri = redirect_uri
-        )
+        auth_code = AuthorizationCode.objects.create(client=client, user=request.user, redirect_uri=redirect_uri)
 
         return redirect(f"{redirect_uri}?code={auth_code.code}")
 
-class TokenView(APIView):   
-    def post(self, request):
-        grant_type = request.data.get('grant_type')
-        code = request.data.get('code')
-        client_id = request.data.get('client_id')
-        client_secret = request.data.get('client_secret')
-        redirect_uri = request.data.get('redirect_uri')
 
-        if grant_type != 'authorization_code':
-            return Response({'error':'Unsupported grant_type'}, status=400)
+class TokenView(APIView):
+    def post(self, request):
+        grant_type = request.data.get("grant_type")
+        code = request.data.get("code")
+        client_id = request.data.get("client_id")
+        client_secret = request.data.get("client_secret")
+        redirect_uri = request.data.get("redirect_uri")
+
+        if grant_type != "authorization_code":
+            return Response({"error": "Unsupported grant_type"}, status=400)
 
         try:
             client = OIDCClient.objects.get(client_id=client_id)
         except OIDCClient.DoesNotExist:
-            return Response({'error':'Invalid client_id'},status=400)
+            return Response({"error": "Invalid client_id"}, status=400)
 
         if client_secret != client.client_secret:
-            return Response({'error':'Invalid client_secret'},status=401)
+            return Response({"error": "Invalid client_secret"}, status=401)
 
         try:
             auth_code = AuthorizationCode.objects.get(code=code)
         except AuthorizationCode.DoesNotExist:
-            return Response({'error':'Invalid code'},status=400)
+            return Response({"error": "Invalid code"}, status=400)
 
         if not auth_code.is_valid:
-            return Response({'error':'Code is expired or already used'},status=400)
+            return Response({"error": "Code is expired or already used"}, status=400)
 
         if auth_code.client != client or auth_code.redirect_uri != redirect_uri:
-            return Response({'error':'Code mismatch'},status=400)
+            return Response({"error": "Code mismatch"}, status=400)
 
         auth_code.is_used = True
         auth_code.save()
@@ -171,47 +162,51 @@ class TokenView(APIView):
         refresh = RefreshToken.for_user(auth_code.user)
         id_token = create_id_token(auth_code.user, client)
 
-        return Response({
-            'access_token': str(refresh.access_token),
-            'refresh_token':str(refresh),
-            'id_token':id_token,
-            'token_type':'Bearer',
-            'expires_in': 900,
-        })
+        return Response(
+            {
+                "access_token": str(refresh.access_token),
+                "refresh_token": str(refresh),
+                "id_token": id_token,
+                "token_type": "Bearer",
+                "expires_in": 900,
+            }
+        )
+
 
 class DiscoveryView(APIView):
     permission_classes = []
 
     def get(self, request):
-        base_url = request.build_absolute_uri('/').rstrip('/')
+        base_url = request.build_absolute_uri("/").rstrip("/")
 
         data = {
-            "issuer":base_url,
+            "issuer": base_url,
             "authorization_endpoint": f"{base_url}/api/auth/authorize/",
-            "token_endpoint":f"{base_url}/api/auth/token/",
+            "token_endpoint": f"{base_url}/api/auth/token/",
             "userinfo_endpoint": f"{base_url}/api/auth/userinfo/",
-            "jwks_uri":f"{base_url}/.well-known/jwks.json",
+            "jwks_uri": f"{base_url}/.well-known/jwks.json",
             "response_types_supported": ["code"],
-            "subject_types_supported":["public"],
+            "subject_types_supported": ["public"],
             "id_token_signing_alg_values_supported": ["RS256"],
             "scopes_supported": ["openid", "email", "profile"],
-            "token_endpoint_auth_methods_supported": ["client_secret_post"]
+            "token_endpoint_auth_methods_supported": ["client_secret_post"],
         }
 
         return Response(data)
 
+
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self,request):
+    def get(self, request):
         user = request.user
 
         data = {
-            "sub":str(user.id),
-            "email":user.email,
-            "email_verified":False,
-            "preferred_username":user.username,
-            "updated_at":int(user.date_joined.timestamp()),
+            "sub": str(user.id),
+            "email": user.email,
+            "email_verified": False,
+            "preferred_username": user.username,
+            "updated_at": int(user.date_joined.timestamp()),
         }
 
         return Response(data)

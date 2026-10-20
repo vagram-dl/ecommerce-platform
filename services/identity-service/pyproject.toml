@@ -1,0 +1,48 @@
+[tool.ruff]
+
+line-length = 120
+
+target-version = "py312"
+
+# Настройки линтера
+[tool.ruff.lint]
+# Включаем правила:
+# F - Pyflakes (неиспользуемые импорты, ошибки)
+# E - Pycodestyle errors (стиль кода)
+# W - Pycodestyle warnings
+# I - isort (сортировка импортов)
+# B - flake8-bugbear (потенциальные баги)
+# S - flake8-bandit (безопасность)
+# C4 - flake8-comprehensions (оптимизация list/dict comprehensions)
+# UP - pyupgrade (современный синтаксис Python)
+select = ["F", "E", "W", "I", "B", "S", "C4", "UP"]
+
+ignore = [
+    "S105",
+    "S106",
+]
+
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*.py" = ["E501"]
+"settings.py" = ["F401", "S105", "S106", "E402"]
+"tests/*" = ["S105", "S106"]
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["accounts", "identity_core"]
+
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+ignore_missing_imports = true
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "identity_core.settings"
