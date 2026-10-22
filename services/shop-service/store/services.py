@@ -1,7 +1,7 @@
-
-from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError
-from .models import Wallet,Payment
+from django.db import IntegrityError, transaction
+
+from .models import Payment, Wallet
 
 
 class PaymentService:
@@ -28,20 +28,23 @@ class PaymentService:
                 wallet.save()
 
                 payment = Payment.objects.create(
-                    user=user, amount=amount, type=payment_type,
-                    idempotency_key=idempotency_key, status=Payment.Status.SUCCESS
+                    user=user,
+                    amount=amount,
+                    type=payment_type,
+                    idempotency_key=idempotency_key,
+                    status=Payment.Status.SUCCESS,
                 )
 
                 return payment
 
         except ValidationError:
             Payment.objects.create(
-                user=user, amount=amount, type=payment_type,
-                idempotency_key=idempotency_key, status=Payment.Status.FAILED
+                user=user,
+                amount=amount,
+                type=payment_type,
+                idempotency_key=idempotency_key,
+                status=Payment.Status.FAILED,
             )
             raise
         except IntegrityError:
             return Payment.objects.get(idempotency_key=idempotency_key)
-
-
-

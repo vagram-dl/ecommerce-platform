@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
-from store.models import Product, Category
+
+from store.models import Category, Product
 
 
 class Command(BaseCommand):
@@ -24,23 +25,49 @@ class Command(BaseCommand):
 
         # Товары с указанием категории для каждого
         products_data = [
-            {"name": "iPhone 15", "description": "Флагманский смартфон", "price": 120000.00, "category": smartphones_category},
-            {"name": "Samsung Galaxy S24", "description": "Смартфон с ИИ-камерой", "price": 95000.00, "category": smartphones_category},
-            {"name": "Xiaomi 13 Ultra", "description": "Фотографский смартфон", "price": 75000.00, "category": smartphones_category},
-            {"name": "Google Pixel 8 Pro", "description": "Лучшая камера", "price": 85000.00, "category": smartphones_category},
-            {"name": "MacBook Pro 16", "description": "Профессиональный ноутбук", "price": 250000.00, "category": laptops_category},
-            {"name": "Dell XPS 15", "description": "Ноутбук для дизайнеров", "price": 180000.00, "category": laptops_category},
+            {
+                "name": "iPhone 15",
+                "description": "Флагманский смартфон",
+                "price": 120000.00,
+                "category": smartphones_category,
+            },
+            {
+                "name": "Samsung Galaxy S24",
+                "description": "Смартфон с ИИ-камерой",
+                "price": 95000.00,
+                "category": smartphones_category,
+            },
+            {
+                "name": "Xiaomi 13 Ultra",
+                "description": "Фотографский смартфон",
+                "price": 75000.00,
+                "category": smartphones_category,
+            },
+            {
+                "name": "Google Pixel 8 Pro",
+                "description": "Лучшая камера",
+                "price": 85000.00,
+                "category": smartphones_category,
+            },
+            {
+                "name": "MacBook Pro 16",
+                "description": "Профессиональный ноутбук",
+                "price": 250000.00,
+                "category": laptops_category,
+            },
+            {
+                "name": "Dell XPS 15",
+                "description": "Ноутбук для дизайнеров",
+                "price": 180000.00,
+                "category": laptops_category,
+            },
         ]
 
         created_count = 0
         for data in products_data:
             product, created = Product.objects.get_or_create(
                 name=data["name"],
-                defaults={
-                    "description": data["description"],
-                    "price": data["price"],
-                    "category": data["category"]
-                }
+                defaults={"description": data["description"], "price": data["price"], "category": data["category"]},
             )
 
             if created:

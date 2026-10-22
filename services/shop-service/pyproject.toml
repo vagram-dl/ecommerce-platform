@@ -1,0 +1,35 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "B", "S", "C4", "UP"]
+ignore = [
+    "S105",  # Временно игнорируем хардкод паролей (исправим позже через .env)
+    "S106",
+]
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["store", "shop_project"]
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+ignore_missing_imports = true
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "shop_project.settings"
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*.py" = ["E501"]
+"shop_project/settings.py" = ["F401", "S105", "S106", "E402", "I001"]
+"store/tests/*" = ["S105", "S106", "E501", "F841"]
+"store/management/commands/*.py" = ["E501"]
+"store/views.py" = ["F841"]
+"store/authentication.py" = ["B904"]

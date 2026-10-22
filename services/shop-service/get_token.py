@@ -1,13 +1,10 @@
-import requests
 import jwt
+import requests
 
 IDENTITY_URL = "http://localhost:8000/api/auth/login/"
 SHOP_URL = "http://localhost:8001/api/test-auth/"
 
-USER_DATA = {
-    "password":"admin123",
-    "email" : "admin@test.com"
-}
+USER_DATA = {"password": "admin123", "email": "admin@test.com"}
 
 print("Шаг 1: Получаем токен от identity-service...")
 try:
@@ -20,7 +17,7 @@ try:
         response_login.raise_for_status()
         token_data = response_login.json()
 
-        token = token_data.get('id_token') or token_data.get('access')
+        token = token_data.get("id_token") or token_data.get("access")
 
         print(f"Токен получен! (Длина: {len(token)} симв.)\n")
 

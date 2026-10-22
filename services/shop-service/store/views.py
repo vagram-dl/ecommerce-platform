@@ -1,31 +1,34 @@
-from django.shortcuts import render, get_object_or_404, redirect
-
-from shop_project.settings import REST_FRAMEWORK
-from .models import Product
-from django.contrib.auth.forms import UserCreationForm
-from django.shortcuts import render,redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-@api_view(['GET'])
+from .models import Product
+
+
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def test_auth(request):
-    return Response({
-        "message": " УСПЕХ! Токен проверен через JWKS-кэш!",
-        "user_id": request.user.id,
-        "username": getattr(request.user, 'username', 'Неизвестно')
-    })
+    return Response(
+        {
+            "message": " УСПЕХ! Токен проверен через JWKS-кэш!",
+            "user_id": request.user.id,
+            "username": getattr(request.user, "username", "Неизвестно"),
+        }
+    )
 
 
 @login_required
 def orders(request):
     return render(request, "store/orders.html")
 
+
 @login_required
 def profile(request):
-    return render(request,"store/profile.html")
+    return render(request, "store/profile.html")
+
 
 def register(request):
     if request.method == "POST":
@@ -35,14 +38,14 @@ def register(request):
             return redirect("login")
     else:
         form = UserCreationForm()
-    return render(request, "store/register.html",{"form":form})
+    return render(request, "store/register.html", {"form": form})
 
 
 def product_list(request):
-    query = request.GET.get('q')
-    min_price = request.GET.get('min_price')
-    max_price = request.GET.get('max_price')
-    category_name = request.GET.get('category')
+    query = request.GET.get("q")
+    min_price = request.GET.get("min_price")
+    max_price = request.GET.get("max_price")
+    category_name = request.GET.get("category")
 
     products = Product.objects.all()
 
@@ -57,39 +60,42 @@ def product_list(request):
 
     if category_name:
         products = products.filter(category__name=category_name)
-    return render(request, 'store/product_list.html', {'products': products})
+    return render(request, "store/product_list.html", {"products": products})
 
-def product_detail(request,pk):
-    product = get_object_or_404(Product,pk=pk)
-    return render(request, 'store/product_detail.html', {'product':product})
 
-def add_to_cart(request,product_id):
-    product = get_object_or_404(Product,id=product_id)
+def product_detail(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    return render(request, "store/product_detail.html", {"product": product})
 
-    cart = request.session.get('cart',{})
+
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    cart = request.session.get("cart", {})
 
     if str(product_id) in cart:
         cart[str(product_id)] += 1
     else:
         cart[str(product_id)] = 1
 
-    request.session['cart'] = cart
+    request.session["cart"] = cart
     request.session.modified = True
 
-    return redirect('cart_view')
+    return redirect("cart_view")
 
-def remove_from_cart(request,product_id):
-    cart = request.session.get('cart',{})
+
+def remove_from_cart(request, product_id):
+    cart = request.session.get("cart", {})
     if str(product_id) in cart:
         del cart[str(product_id)]
-    request.session['cart'] = cart
+    request.session["cart"] = cart
     request.session.modified = True
 
-    return redirect('cart_view')
+    return redirect("cart_view")
 
 
 def cart_view(request):
-    cart = request.session.get('cart', {})
+    cart = request.session.get("cart", {})
 
     products_in_cart = []
     total = 0
@@ -98,22 +104,17 @@ def cart_view(request):
         try:
             product = Product.objects.get(id=product_id)
             subtotal = product.price * quantity
-            products_in_cart.append({
-                'product': product,
-                'quantity': quantity,
-                'subtotal': subtotal
-            })
+            products_in_cart.append({"product": product, "quantity": quantity, "subtotal": subtotal})
             total += subtotal
         except Product.DoesNotExist:
             continue
 
     context = {
-        'products': products_in_cart,
-        'total': total,
+        "products": products_in_cart,
+        "total": total,
     }
 
-    return render(request, 'store/cart.html', context)
-
+    return render(request, "store/cart.html", context)
 
 
 # Create your views here.
