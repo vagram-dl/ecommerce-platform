@@ -32,4 +32,3 @@ django_settings_module = "shop_project.settings"
 "store/tests/*" = ["S105", "S106", "E501", "F841"]
 "store/management/commands/*.py" = ["E501"]
 "store/views.py" = ["F841"]
-"store/authentication.py" = ["B904"]

@@ -51,14 +51,17 @@ class JWKSAuthentication(authentication.BaseAuthentication):
             return (user, token)
 
         except jwt.ExpiredSignatureError:
-            raise exceptions.AuthenticationFailed("Токен истек")
+            raise exceptions.AuthenticationFailed("Токен истек") from None
+
         except jwt.InvalidTokenError as e:
-            raise exceptions.AuthenticationFailed(f"Недействительный токен: {str(e)}")
-        except User.DoesNotExist:
-            raise exceptions.AuthenticationFailed("Пользователь не найден в shop-service")
+            raise exceptions.AuthenticationFailed(f"Недействительный токен: {str(e)}") from e
+
+        except jwt.DoesNotExist:
+            raise exceptions.AuthenticationFailed("Пользователь не найден в shop-service") from None
+
         except Exception as e:
             print(f"Ошибка аутентификации: {e}")
-            raise exceptions.AuthenticationFailed("Ошибка аутентификации")
+            raise exceptions.AuthenticationFailed("Ошибка аутентификации") from None
 
     def authenticate_header(self, request):
         return 'Bearer realm= "api" '
