@@ -25,7 +25,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/migrations/*.py" = ["E501"]
-"settings.py" = ["F401", "S105", "S106", "E402"]
+"settings.py" = ["F401","E402"]
 "tests/*" = ["S105", "S106"]
 
 
