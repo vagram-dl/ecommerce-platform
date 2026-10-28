@@ -3,15 +3,16 @@ import logging
 import requests
 from django.conf import settings
 
+from identity_core.utils.result import Failure, Result, Success
+
 logger = logging.getLogger(__name__)
 
 
-def create_customer_in_shop(user):
+def create_customer_in_shop(user) -> Result[dict, str]:
     shop_service_url = getattr(settings, "SHOP_SERVICE_URL", "http://localhost:8001")
     url = f"{shop_service_url}/api/customers/"
 
     payload = {"user_id": user.id, "email": user.email, "username": user.username}
-
     headers = {"Content-Type": "application/json"}
 
     try:
@@ -29,57 +30,33 @@ def create_customer_in_shop(user):
             },
         )
 
-        return response.json()
+        return Success(response.json())
 
     except requests.exceptions.Timeout:
         logger.error(
             "Timeout while creating customer in shop-service",
-            extra={
-                "user_id": user.id,
-                "email": user.email,
-                "service": "shop-service",
-                "endpoint": url,
-                "error_type": "Timeout",
-            },
+            extra={"user_id": user.id, "email": user.email, "error_type": "Timeout"},
         )
-        return None
+        return Failure("SHOP_SERVICE_TIMEOUT")
 
     except requests.exceptions.ConnectionError:
         logger.error(
             "Connection error while creating customer in shop-service",
-            extra={
-                "user_id": user.id,
-                "email": user.email,
-                "service": "shop-service",
-                "endpoint": url,
-                "error_type": "ConnectionError",
-            },
+            extra={"user_id": user.id, "email": user.email, "error_type": "ConnectionError"},
         )
-        return None
+        return Failure("SHOP_SERVICE_CONNECTION_ERROR")
 
     except requests.exceptions.HTTPError as e:
+        status_code = e.response.status_code if e.response else "Unknown"
         logger.error(
-            "HTTP error while creating customer in shop-service",
-            extra={
-                "user_id": user.id,
-                "email": user.email,
-                "service": "shop-service",
-                "endpoint": url,
-                "error_type": "HTTPError",
-                "status_code": e.response.status_code if e.response else None,
-            },
+            f"HTTP error {status_code} while creating customer in shop-service",
+            extra={"user_id": user.id, "email": user.email, "error_type": "HTTPError"},
         )
-        return None
+        return Failure(f"SHOP_SERVICE_HTTP_ERROR_{status_code}")
 
     except Exception as e:
         logger.exception(
             "Unexpected error while creating customer in shop-service",
-            extra={
-                "user_id": user.id,
-                "email": user.email,
-                "service": "shop-service",
-                "endpoint": url,
-                "error_type": type(e).__name__,
-            },
+            extra={"user_id": user.id, "email": user.email, "error_type": type(e).__name__},
         )
-        return None
+        return Failure("SHOP_SERVICE_UNEXPECTED_ERROR")
