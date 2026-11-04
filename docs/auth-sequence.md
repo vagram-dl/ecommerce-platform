@@ -1,3 +1,6 @@
+# Процесс валидации JWT токена в Shop Service
+
+```mermaid
 sequenceDiagram
     title Процесс валидации JWT токена в Shop Service
 
