@@ -85,16 +85,11 @@ class PaymentHistoryView(APIView):
 
     def get(self, request):
         payments = Payment.objects.filter(user=request.user).order_by("-created_at")
-
-        payments_data = []
-        for payment in payments:
-            payments_data.append(
-                {
-                    "id": payment.id,
-                    "amount": str(payment.amount),
-                    "type": payment.type,
-                    "status": payment.status,
-                    "created_at": payment.created_at.isoformat(),
-                }
-            )
-        return Response({"total_count": len(payments_data), "payments": payments_data}, status=status.HTTP_200_OK)
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(
+            {
+                "total_count": payments.count(),
+                "payments": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
