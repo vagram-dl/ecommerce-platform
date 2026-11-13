@@ -14,6 +14,12 @@ class PaymentSerializer(serializers.Serializer):
     idempotency_key = serializers.UUIDField(default=uuid.uuid4)
 
 
+class PaymentDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ["id", "amount", "type", "status", "created_at"]
+
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category

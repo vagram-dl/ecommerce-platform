@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Category, Payment, Product, Wallet
-from .serializers import CategorySerializer, PaymentSerializer, ProductSerializer
+from .serializers import CategorySerializer, PaymentDetailSerializer, PaymentSerializer, ProductSerializer
 from .services import PaymentService
 
 
@@ -23,6 +23,7 @@ class PaymentAPIView(APIView):
                     payment_type=serializer.validated_data["type"],
                     idempotency_key=serializer.validated_data["idempotency_key"],
                 )
+                request.user.wallet.refresh_from_db()
 
                 return Response(
                     {
@@ -85,7 +86,7 @@ class PaymentHistoryView(APIView):
 
     def get(self, request):
         payments = Payment.objects.filter(user=request.user).order_by("-created_at")
-        serializer = PaymentSerializer(payments, many=True)
+        serializer = PaymentDetailSerializer(payments, many=True)
         return Response(
             {
                 "total_count": payments.count(),

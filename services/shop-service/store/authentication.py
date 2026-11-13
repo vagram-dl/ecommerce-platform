@@ -56,9 +56,6 @@ class JWKSAuthentication(authentication.BaseAuthentication):
         except jwt.InvalidTokenError as e:
             raise exceptions.AuthenticationFailed(f"Недействительный токен: {str(e)}") from e
 
-        except jwt.DoesNotExist:
-            raise exceptions.AuthenticationFailed("Пользователь не найден в shop-service") from None
-
         except Exception as e:
             print(f"Ошибка аутентификации: {e}")
             raise exceptions.AuthenticationFailed("Ошибка аутентификации") from None

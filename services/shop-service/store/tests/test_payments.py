@@ -9,7 +9,6 @@ from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from store.models import Payment, Wallet
 from store.services import PaymentService
@@ -80,9 +79,8 @@ class PaymentAPITests(APITestCase):
         self.user = User.objects.create_user(username="apiuser", password="apipass123")
         self.wallet = Wallet.objects.create(user=self.user, balance=5000)
 
-        self.refresh = RefreshToken.for_user(self.user)
         self.client = APIClient()
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.refresh.access_token}")
+        self.client.force_authenticate(user=self.user)
 
         self.payment_url = reverse("payment-api")
         self.balance_url = reverse("wallet-balance")
@@ -127,9 +125,8 @@ class PaymentAPITests(APITestCase):
         self.assertEqual(float(response.data["payments"][0]["amount"]), 500.00)
 
     def test_api_unauthorized_access(self):
-        self.client.credentials()
-
-        response = self.client.get(self.balance_url)
+        unauthenticated_client = APIClient()
+        response = unauthenticated_client.get(self.balance_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_api_idempotency_prevents_duplicate_payment(self):
@@ -144,6 +141,34 @@ class PaymentAPITests(APITestCase):
         self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
         self.wallet.refresh_from_db()
         self.assertEqual(float(self.wallet.balance), 6000.00)
+
+    def test_api_get_history_returns_correct_structure(self):
+        Payment.objects.create(
+            user=self.user,
+            amount=750,
+            type=Payment.Type.DEPOSIT,
+            idempotency_key=uuid.uuid4(),
+            status=Payment.Status.SUCCESS,
+        )
+
+        response = self.client.get(self.history_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertIn("total_count", response.data)
+        self.assertIn("payments", response.data)
+        self.assertEqual(response.data["total_count"], 1)
+
+        payment = response.data["payments"][0]
+        self.assertIn("id", payment)
+        self.assertIn("amount", payment)
+        self.assertIn("type", payment)
+        self.assertIn("status", payment)
+        self.assertIn("created_at", payment)
+
+        self.assertEqual(float(payment["amount"]), 750.00)
+        self.assertEqual(payment["type"], "deposit")
+        self.assertEqual(payment["status"], "success")
 
 
 @skipIf(
